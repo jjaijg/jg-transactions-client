@@ -19,7 +19,7 @@ import { Box } from "@mui/material";
 function App() {
   // const [openSideNav, setOpenSideNav] = useState(false);
   const dispatch = useDispatch();
-  const { isLoading } = useSelector((state) => state.auth);
+  const { user, isLoading } = useSelector((state) => state.auth);
   useEffect(() => {
     dispatch(getMe());
   }, [dispatch]);
@@ -35,7 +35,7 @@ function App() {
       <Router>
         <CssBaseline />
         <Header />
-        <SideNav />
+        <SideNav user={user} />
         <Box
           component={"main"}
           sx={{
@@ -46,8 +46,8 @@ function App() {
         >
           <Routes>
             <Route path="/" element={<div>Home</div>} />
-            <Route path="/transaction" element={<TransactionDashboard />} />
-            <Route path="/category" element={<CategoryDashboard />} />
+            <Route path="/transactions" element={<TransactionDashboard />} />
+            <Route path="/categories" element={<CategoryDashboard />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
           </Routes>

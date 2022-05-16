@@ -17,6 +17,7 @@ import {
 } from "../features/categories/categoriesSlice";
 import { toast } from "react-toastify";
 import CategoryList from "../components/CategoryList";
+import CategoryLoader from "../components/CategoryLoader";
 
 function CategoryDashboard() {
   const dispatch = useDispatch();
@@ -82,7 +83,13 @@ function CategoryDashboard() {
             updating={isUpdating}
             deleting={isDeleting}
           />
-          {isLoading && <Spinner />}
+          {isLoading && (
+            <Box sx={{ m: 2 }}>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <CategoryLoader key={`cat-loader-${i}`} />
+              ))}
+            </Box>
+          )}
         </Paper>
       </Box>
     </Container>

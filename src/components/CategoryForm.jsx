@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { Box, Button, TextField } from "@mui/material";
+import { Box, Button, Grid, TextField } from "@mui/material";
 import { toast } from "react-toastify";
 import { createCategory, reset } from "../features/categories/categoriesSlice";
 
@@ -33,36 +33,39 @@ export const CategoryForm = () => {
 
   return (
     <div>
-      <Box
+      <Grid
+        spacing={2}
+        container
         component="form"
-        sx={{
-          "& .MuiTextField-root": { m: 2, width: "100ch" },
-          display: "flex",
-          //   flexDirection: "column",
-          //   alignItems: "center",
-        }}
         noValidate
         autoComplete="off"
+        justifyContent={"center"}
+        alignItems={"center"}
         onSubmit={handleSubmit}
       >
-        <TextField
-          required
-          type={"name"}
-          name="name"
-          id="name"
-          label="Category name"
-          value={name}
-          onChange={handleChange}
-        />
-        <Button
-          color="success"
-          variant="contained"
-          type="submit"
-          sx={{ my: 2 }}
-        >
-          Add category
-        </Button>
-      </Box>
+        <Grid item md={12} lg={9} sx={{ mx: 1 }}>
+          <TextField
+            required
+            type={"name"}
+            name="name"
+            id="name"
+            label="Category name"
+            fullWidth
+            value={name}
+            onChange={handleChange}
+          />
+        </Grid>
+        <Grid item md={12} lg={2} alignSelf={"stretch"}>
+          <Button
+            color="success"
+            variant="contained"
+            type="submit"
+            sx={{ height: "100%" }}
+          >
+            Add category
+          </Button>
+        </Grid>
+      </Grid>
     </div>
   );
 };

@@ -11,7 +11,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 // import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import { useFormik } from "formik";
-import { InputAdornment, MenuItem } from "@mui/material";
+import { CircularProgress, InputAdornment, MenuItem } from "@mui/material";
 import Stack from "@mui/material/Stack";
 import DesktopDatePicker from "@mui/lab/DesktopDatePicker";
 import MobileDatePicker from "@mui/lab/MobileDatePicker";
@@ -36,7 +36,7 @@ const validationSchema = yup.object({
   date: yup.date().required("Date is required"),
 });
 
-function AddTransaction({ open, handleClose, addTransaction }) {
+function AddTransaction({ open, loading, handleClose, addTransaction }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { categories } = useSelector((state) => state.categories);
@@ -146,9 +146,6 @@ function AddTransaction({ open, handleClose, addTransaction }) {
                 isOptionEqualToValue={(opt, val) => opt._id === val._id}
                 value={formik.values.category}
                 onChange={(e, val) => {
-                  console.log(e.target.name);
-                  console.log(e.target.value);
-                  console.log("cat val : ", val);
                   formik.setFieldValue("category", val);
                 }}
                 size={"small"}
@@ -181,8 +178,12 @@ function AddTransaction({ open, handleClose, addTransaction }) {
                 onChange={formik.handleChange}
               />
               <DialogActions>
-                <Button onClick={handleClose}>Cancel</Button>
-                <Button type="submit">Add</Button>
+                <Button onClick={handleClose} disabled={loading}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? <CircularProgress /> : "Add"}
+                </Button>
               </DialogActions>
             </Stack>
           </form>

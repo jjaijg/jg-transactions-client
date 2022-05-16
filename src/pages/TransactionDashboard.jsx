@@ -43,7 +43,7 @@ function TransactionDashboard() {
   const dispatch = useDispatch();
   // GLOBAL STATES
   const { user } = useSelector((state) => state.auth);
-  const { isSuccess, isError, message } = useSelector(
+  const { isSuccess, isError, message, isLoading } = useSelector(
     (state) => state.transactions
   );
 
@@ -328,6 +328,7 @@ function TransactionDashboard() {
         <AddTransaction
           addTransaction={handleAddTransaction}
           open={openAdd}
+          loading={isLoading}
           handleClose={() => {
             setOpenAdd(false);
           }}
