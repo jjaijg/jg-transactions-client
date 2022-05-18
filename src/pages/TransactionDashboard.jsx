@@ -117,6 +117,10 @@ function TransactionDashboard() {
     handleEditOpen();
   };
   const handleDelete = async (id) => {
+    const canDel = window.confirm(
+      "Are you sure?  Do you want to delete the selected transaction? "
+    );
+    if (!canDel) return;
     setLoading(true);
     await deleteTransaction(user?.token, id)
       .then(() => {
