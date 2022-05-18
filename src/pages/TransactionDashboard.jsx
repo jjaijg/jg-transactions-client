@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { Box, Container, Grid, Typography } from "@mui/material";
+import { Box, Container, Grid, Typography, Paper } from "@mui/material";
 import TransactionCard from "../components/TransactionCard";
 import RecentTransactionCard from "../components/RecentTransactionCard";
 import Fab from "@mui/material/Fab";
@@ -16,6 +16,7 @@ import { startOfMonth, endOfMonth, subMonths } from "date-fns";
 import {
   getTotalFromTransactions,
   getfilteredTransactions,
+  updateTransaction,
   deleteTransaction,
 } from "../features/transactions/transactionsService";
 import {
@@ -24,6 +25,7 @@ import {
 } from "./../features/transactions/transactionsSlice";
 import { toast } from "react-toastify";
 import { CategoryChart, MonthChart } from "../components/Charts";
+import EditTransaction from "./../components/EditTransaction";
 
 const getTransactions = async (token, params = { page: 1, group: 0 }) => {
   const paramters = {
@@ -68,8 +70,14 @@ function TransactionDashboard() {
   // ADD TRANSACTION DIALOG STATES
   const [openAdd, setOpenAdd] = useState(false);
 
+  // EDIT TRANSACTION DIALOG STATES
+  const [txnEdit, setTxnEdit] = useState({});
+  const [openEdit, setOpenEdit] = useState(false);
+
   // TRANSACTION TABLE STATES
   const [transactions, setTransactions] = useState([]);
+  const [txnFilter, setTxnFilter] = useState({});
+  const [txnSort, setTxnSort] = useState({});
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
@@ -85,7 +93,29 @@ function TransactionDashboard() {
     dispatch(createTransaction(transaction));
   };
 
+  // EDIT TRANSACTION DIALOG FUNCTIONS
+  const handleEditOpen = () => {
+    setOpenEdit(true);
+  };
+
+  const handleEditTransaction = async (transaction) => {
+    setLoading(true);
+    await updateTransaction(user?.token, transaction)
+      .then(() => {
+        setRefresh(true);
+      })
+      .catch(() => {
+        setRefresh(false);
+        setLoading(false);
+      });
+  };
+
   // TRANSACTION TABLE FUNCTIONS
+  const handleEdit = async (row) => {
+    console.log("editing : ", row);
+    setTxnEdit(row);
+    handleEditOpen();
+  };
   const handleDelete = async (id) => {
     setLoading(true);
     await deleteTransaction(user?.token, id)
@@ -99,7 +129,14 @@ function TransactionDashboard() {
   };
 
   // TRANSACTION TABLE FUNCTIONS
-  const getFilteredTxns = (user, page, pageSize, txnGrpDate) => {
+  const getFilteredTxns = (
+    user,
+    page,
+    pageSize,
+    txnGrpDate,
+    txnFilters = {},
+    txnSort = {}
+  ) => {
     if (user && user.token && pageSize) {
       setLoading(true);
       getTransactions(user.token, {
@@ -107,6 +144,8 @@ function TransactionDashboard() {
         page,
         start: startOfMonth(txnGrpDate),
         end: endOfMonth(txnGrpDate),
+        ...txnFilters,
+        ...txnSort,
       })
         .then((res) => {
           const {
@@ -132,6 +171,26 @@ function TransactionDashboard() {
         });
     }
   };
+
+  const handleFilterChange = useCallback((model, details) => {
+    console.log("Filtering : ", model);
+    const { columnField, operatorValue, value } = model.items[0];
+    if (value === undefined) return setTxnFilter({});
+    setTxnFilter({
+      [columnField]: value,
+      op: operatorValue,
+    });
+  }, []);
+
+  const handleSortChange = useCallback((model, details) => {
+    console.log("Sorting : ", model);
+    if (model?.length <= 0) return setTxnSort({});
+    const { field, sort } = model[0];
+    setTxnSort({
+      sort_by: field,
+      sort_order: sort,
+    });
+  }, []);
 
   // TRANSACTION CARD FUNCTIONS
   const getTxnTotals = (user, currentDateFilter) => {
@@ -159,7 +218,7 @@ function TransactionDashboard() {
 
   // RECENT TRANSACTIONS FUNCTIONS
   const getRecentTxns = (user) => {
-    if (user) {
+    if (user?.token) {
       setLoading(true);
       getTransactions(user.token, {
         limit: 5,
@@ -176,7 +235,7 @@ function TransactionDashboard() {
 
   // LAST 6 MONTH CHART FUNCTION
   const getTotalForSixMonths = (user, date) => {
-    if (user) {
+    if (user?.token) {
       const start = startOfMonth(subMonths(date, 6));
       const end = new Date();
       getTotal(user.token, {
@@ -194,7 +253,7 @@ function TransactionDashboard() {
 
   // CATEGORY CHART FUNCTION
   const getTotalByCategory = (user, date) => {
-    if (user) {
+    if (user?.token) {
       const start = startOfMonth(date);
       const end = endOfMonth(date);
       getTotal(user.token, {
@@ -210,8 +269,15 @@ function TransactionDashboard() {
 
   // TRANSACTION TABLE EFFECTS
   useEffect(() => {
-    getFilteredTxns(user, page, pageSize, currentDateFilter);
-  }, [user, page, pageSize, currentDateFilter]);
+    getFilteredTxns(
+      user,
+      page,
+      pageSize,
+      currentDateFilter,
+      txnFilter,
+      txnSort
+    );
+  }, [user, page, pageSize, currentDateFilter, txnFilter, txnSort]);
 
   // TRANSACTION ADD EFFECTS
   useEffect(() => {
@@ -312,7 +378,13 @@ function TransactionDashboard() {
           />
         </Grid>
       </Grid>
-      <Box sx={{ height: 450, width: "100%", my: 2, mb: 8 }}>
+      <Paper
+        elevation={3}
+        sx={{ height: 450, width: "100%", my: 2, mb: 8, pb: 7 }}
+      >
+        <h3 style={{ textAlign: "center", paddingTop: "0.8rem" }}>
+          All Transactions{" "}
+        </h3>
         <TransactionTable
           transactions={transactions}
           pagSize={pageSize}
@@ -321,9 +393,12 @@ function TransactionDashboard() {
           setPage={setPage}
           setPageSize={setPageSize}
           loading={loading}
+          handleFilterChange={handleFilterChange}
+          handleSortChange={handleSortChange}
+          handleEdit={handleEdit}
           handleDelete={handleDelete}
         />
-      </Box>
+      </Paper>
       <Box sx={{ position: "fixed", bottom: 16, right: 16 }}>
         <AddTransaction
           addTransaction={handleAddTransaction}
@@ -342,6 +417,16 @@ function TransactionDashboard() {
           <AddIcon />
         </Fab>
       </Box>
+      <EditTransaction
+        transaction={txnEdit}
+        editTransaction={handleEditTransaction}
+        open={openEdit}
+        loading={loading}
+        handleClose={() => {
+          setOpenEdit(false);
+          // setTxnEdit({});
+        }}
+      />
     </Container>
   );
 }

@@ -1,22 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { DataGrid, GridToolbar, GridActionsCellItem } from "@mui/x-data-grid";
+import { DataGrid, GridActionsCellItem } from "@mui/x-data-grid";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 
 import { columns } from "./columns";
-
 import CustomToolbar from "./CustomToolbar";
-// function CustomToolbar() {
-//   return (
-//     <GridToolbarContainer>
-//       <GridToolbarColumnsButton />
-//       <GridToolbarFilterButton />
-//       <GridToolbarDensitySelector />
-//       <GridToolbarExport />
-//       <FilterMenu />
-//     </GridToolbarContainer>
-//   );
-// }
 
 function Table({
   transactions = [],
@@ -26,6 +14,9 @@ function Table({
   setPage,
   setPageSize,
   loading,
+  handleFilterChange,
+  handleSortChange,
+  handleEdit,
   handleDelete,
   // groupBy,
   // setGroupBy,
@@ -40,6 +31,42 @@ function Table({
       rowCount !== undefined ? rowCount : prevRowCountState
     );
   }, [rowCount, setRowCountState]);
+
+  const onPageChange = useCallback(
+    (page) => {
+      setPage(page + 1);
+    },
+    [setPage]
+  );
+
+  const onPageSizeChange = useCallback(
+    (newSize) => {
+      setPageSize(newSize);
+    },
+    [setPageSize]
+  );
+
+  const onFilterChange = useCallback(
+    (model, details) => {
+      handleFilterChange(model, details);
+    },
+    [handleFilterChange]
+  );
+
+  const onSortChange = useCallback(
+    (model, details) => {
+      handleSortChange(model, details);
+    },
+    [handleSortChange]
+  );
+
+  const onEdit = useCallback(
+    (row) => () => {
+      // console.log("editing : ", row.row);
+      handleEdit(row.row);
+    },
+    [handleEdit]
+  );
 
   const onDelete = useCallback(
     (id) => () => {
@@ -61,9 +88,7 @@ function Table({
             icon={<EditIcon />}
             label="Edit"
             disabled={loading}
-            onClick={(params) => () => {
-              console.log("Edit item : ", params);
-            }}
+            onClick={onEdit(params)}
           />,
           <GridActionsCellItem
             icon={<DeleteIcon />}
@@ -74,7 +99,7 @@ function Table({
         ],
       },
     ],
-    [onDelete, loading]
+    [onDelete, onEdit, loading]
   );
 
   return (
@@ -86,32 +111,22 @@ function Table({
         rowCount={rowCountState}
         pageSize={pagSize}
         rowsPerPageOptions={rowsPerPageOptions}
-        // checkboxSelection
         pagination
         paginationMode="server"
+        filterMode="server"
+        sortingMode="server"
         loading={loading}
         components={{
           Toolbar: CustomToolbar,
-          // Toolbar: () =>
-          //   CustomToolbar({
-          //     groupBy,
-          //     setGroupBy,
-          //     txnGrpDate,
-          //     setTxnGrpDate,
-          //     filterOpen,
-          //     setFilterOpen,
-          //   }),
-          // Toolbar: GridToolbar,
         }}
-        onPageChange={(page) => {
-          setPage(page + 1);
-        }}
-        onPageSizeChange={(newSize) => {
-          setPageSize(newSize);
-        }}
-        onFilterModelChange={(model, details) => {
-          console.log("Filtering : ", model, details);
-        }}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
+        onFilterModelChange={onFilterChange}
+        onSortModelChange={onSortChange}
+        // checkboxSelection
+        // componentsProps={{
+        //   footer: { count: rowCountState },
+        // }}
 
         // disableSelectionOnClick
       />

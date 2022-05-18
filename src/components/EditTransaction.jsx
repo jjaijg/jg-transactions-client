@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
@@ -6,9 +6,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import Autocomplete from "@mui/material/Autocomplete";
-// import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-// import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import { useFormik } from "formik";
 import { CircularProgress, InputAdornment, MenuItem } from "@mui/material";
@@ -35,20 +33,26 @@ const validationSchema = yup.object({
   date: yup.date().required("Date is required"),
 });
 
-function AddTransaction({ open, loading, handleClose, addTransaction }) {
+function EditTransaction({
+  transaction,
+  open,
+  loading,
+  handleClose,
+  editTransaction,
+}) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { categories } = useSelector((state) => state.categories);
 
   const formik = useFormik({
     initialValues: {
-      amount: 1,
+      amount:  1,
       type: "income",
       category: {
-        name: "---Select a category---",
+        name:  "---Select a category---",
       },
       description: "",
-      date: new Date(),
+      date:  new Date(),
     },
     validationSchema: validationSchema,
     onSubmit: (values) => {
@@ -56,22 +60,42 @@ function AddTransaction({ open, loading, handleClose, addTransaction }) {
       // alert(
       //   JSON.stringify({ ...values, date: values.date.toLocaleDateString() })
       // );
-      addTransaction({
+      editTransaction({
         ...values,
         date: values.date.toLocaleDateString(),
         category: values.category._id,
+        id: transaction._id,
       });
     },
   });
+
+  const setInitialFormData = useCallback(transaction => {
+     console.log("setting formik values ...");
+      formik.setValues({
+        amount: transaction?.amount || 1,
+        type: transaction?.type || "income",
+        category: {
+          name: transaction?.category_name || "---Select a category---",
+        },
+        description: transaction?.description || "",
+        date: transaction?.date ? new Date(transaction?.date) : new Date(),
+      });
+  }, [])
 
   useEffect(() => {
     if (user && user.token) dispatch(getUserCategories());
   }, [user, dispatch]);
 
+  useEffect(() => {
+    if (Object.keys(transaction).length > 0) {
+     setInitialFormData(transaction)
+    }
+  }, [transaction, setInitialFormData]);
+
   return (
     <Container>
       <Dialog scroll="body" fullWidth open={open} onClose={handleClose}>
-        <DialogTitle>Add Transaction</DialogTitle>
+        <DialogTitle>Edit Transaction</DialogTitle>
         <DialogContent>
           <form onSubmit={formik.handleSubmit}>
             <Stack spacing={3}>
@@ -181,7 +205,7 @@ function AddTransaction({ open, loading, handleClose, addTransaction }) {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={loading}>
-                  {loading ? <CircularProgress size={25} /> : "Add"}
+                  {loading ? <CircularProgress size={25} /> : "Edit"}
                 </Button>
               </DialogActions>
             </Stack>
@@ -192,4 +216,4 @@ function AddTransaction({ open, loading, handleClose, addTransaction }) {
   );
 }
 
-export default AddTransaction;
+export default EditTransaction;

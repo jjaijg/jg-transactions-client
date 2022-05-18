@@ -1,7 +1,25 @@
 import { formatDate } from "../../utils/dateUtils";
-import { GridActionsCellItem } from "@mui/x-data-grid";
+import {
+  GridActionsCellItem,
+  getGridNumericOperators,
+  getGridDateOperators,
+  getGridStringOperators,
+} from "@mui/x-data-grid";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+
+const ALLOWED_NUMERIC_OPERATORS = ["=", "!=", ">", ">=", "<", "<="];
+const ALLOWED_STRING_OPERATORS = ["contains"];
+const ALLOWED_DATE_OPERATORS = ["is"];
+const numericFilterOptions = getGridNumericOperators().filter((op) =>
+  ALLOWED_NUMERIC_OPERATORS.includes(op.value)
+);
+const stringFilterOptions = getGridStringOperators().filter((op) =>
+  ALLOWED_STRING_OPERATORS.includes(op.value)
+);
+const dateFilterOptions = getGridDateOperators().filter((op) =>
+  ALLOWED_DATE_OPERATORS.includes(op.value)
+);
 
 export const columns = [
   //   { field: 'id', headerName: 'ID', width: 90 },
@@ -15,6 +33,7 @@ export const columns = [
     align: "center",
     editable: false,
     hideable: false,
+    filterOperators: numericFilterOptions,
   },
   {
     field: "type",
@@ -26,6 +45,7 @@ export const columns = [
     editable: false,
     hideable: false,
     valueGetter: (params) => `${params.row.type?.toUpperCase()}`,
+    filterOperators: stringFilterOptions,
   },
   {
     field: "category_name",
@@ -35,6 +55,7 @@ export const columns = [
     headerAlign: "center",
     align: "center",
     editable: false,
+    filterOperators: stringFilterOptions,
   },
   {
     field: "date",
@@ -45,6 +66,7 @@ export const columns = [
     headerAlign: "center",
     align: "center",
     editable: false,
+    filterOperators: dateFilterOptions,
     valueFormatter: (params) => {
       return `${formatDate(params.value)}`;
     },
@@ -58,6 +80,7 @@ export const columns = [
     headerAlign: "center",
     align: "center",
     hide: false,
+    filterOperators: stringFilterOptions,
   },
   {
     field: "actions",

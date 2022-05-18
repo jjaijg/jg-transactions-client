@@ -14,7 +14,7 @@ import CountUp from "react-countup";
 
 function RecentTransactionCard({ transactions = [] }) {
   const formatDate = (date) => {
-    console.log("memo date : ", date);
+    // console.log("memo date : ", date);
     return format(new Date(date), "dd, MMM yyyy");
   };
   return (
