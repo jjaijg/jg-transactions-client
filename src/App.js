@@ -1,8 +1,11 @@
 import { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Box } from "@mui/material";
 import { ToastContainer } from "react-toastify";
 import CssBaseline from "@mui/material/CssBaseline";
 import "react-toastify/dist/ReactToastify.css";
+
+import {TransactionProvider} from './context/transactionContext'
 
 import CategoryDashboard from "./pages/CategoryDashboard";
 import Login from "./pages/Login";
@@ -14,7 +17,6 @@ import Spinner from "./components/Spinner";
 import TransactionDashboard from "./pages/TransactionDashboard";
 import SideNav from "./components/SideNav";
 import { DRAWER_WIDTH } from "./constants";
-import { Box } from "@mui/material";
 
 function App() {
   // const [openSideNav, setOpenSideNav] = useState(false);
@@ -46,7 +48,12 @@ function App() {
         >
           <Routes>
             <Route path="/" element={<div>Home</div>} />
-            <Route path="/transactions" element={<TransactionDashboard />} />
+            <Route path="/transactions" element={
+              <TransactionProvider>
+
+                <TransactionDashboard />
+              </TransactionProvider>
+            } />
             <Route path="/categories" element={<CategoryDashboard />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />

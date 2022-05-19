@@ -1,21 +1,31 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useContext } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { Box, Container, Grid, Typography, Paper } from "@mui/material";
-import TransactionCard from "../components/TransactionCard";
-import RecentTransactionCard from "../components/RecentTransactionCard";
+import {
+  Box,
+  Container,
+  Grid,
+  Typography,
+  Paper,
+  TextField,
+} from "@mui/material";
+import AdapterDateFns from "@mui/lab/AdapterDateFns";
+import DatePicker from "@mui/lab/DatePicker";
+import LocalizationProvider from "@mui/lab/LocalizationProvider";
 import Fab from "@mui/material/Fab";
 import AddIcon from "@mui/icons-material/Add";
+import { toast } from "react-toastify";
+import { startOfMonth, endOfMonth, subMonths } from "date-fns";
+
+import TransactionCard from "../components/TransactionCard";
+import RecentTransactionCard from "../components/RecentTransactionCard";
 import AddTransaction from "../components/AddTransaction";
 import TransactionTable from "../components/TransactionTable";
-import TextField from "@mui/material/TextField";
-import AdapterDateFns from "@mui/lab/AdapterDateFns";
-import LocalizationProvider from "@mui/lab/LocalizationProvider";
-import DatePicker from "@mui/lab/DatePicker";
-import { startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { CategoryChart, MonthChart } from "../components/Charts";
+import EditTransaction from "./../components/EditTransaction";
 
 import {
   getTotalFromTransactions,
-  getfilteredTransactions,
+  // getfilteredTransactions,
   updateTransaction,
   deleteTransaction,
 } from "../features/transactions/transactionsService";
@@ -23,16 +33,11 @@ import {
   createTransaction,
   reset,
 } from "./../features/transactions/transactionsSlice";
-import { toast } from "react-toastify";
-import { CategoryChart, MonthChart } from "../components/Charts";
-import EditTransaction from "./../components/EditTransaction";
-
-const getTransactions = async (token, params = { page: 1, group: 0 }) => {
-  const paramters = {
-    ...params,
-  };
-  return await getfilteredTransactions(token, paramters);
-};
+import {
+  TransactionCtx,
+  TransactionDispatchCtx,
+} from "../context/transactionContext";
+import { getTransactions } from "../utils/transactionUtils";
 
 const getTotal = async (token, params = {}) => {
   const res = await getTotalFromTransactions(token, params);
@@ -43,14 +48,32 @@ const getTotal = async (token, params = {}) => {
 function TransactionDashboard() {
   // REDUX
   const dispatch = useDispatch();
+  // CONTEXT
+  const {
+    transactions,
+    user,
+    page,
+    pageSize,
+    currentDateFilter,
+    totalCount,
+    loading,
+    refresh,
+  } = useContext(TransactionCtx);
+  const {
+    setCurrentDateFilter,
+    setTxnFilter,
+    setTxnSort,
+    setPage,
+    setPageSize,
+    setLoading,
+    setRefresh,
+    // getFilteredTxns,
+  } = useContext(TransactionDispatchCtx);
   // GLOBAL STATES
-  const { user } = useSelector((state) => state.auth);
+  // const { user } = useSelector((state) => state.auth);
   const { isSuccess, isError, message, isLoading } = useSelector(
     (state) => state.transactions
   );
-
-  // Dashboard STATES
-  const [currentDateFilter, setCurrentDateFilter] = useState(new Date());
 
   // TRANSACTION CARD STATES
   const [txnDetail, setTxnDetail] = useState({
@@ -73,16 +96,6 @@ function TransactionDashboard() {
   // EDIT TRANSACTION DIALOG STATES
   const [txnEdit, setTxnEdit] = useState({});
   const [openEdit, setOpenEdit] = useState(false);
-
-  // TRANSACTION TABLE STATES
-  const [transactions, setTransactions] = useState([]);
-  const [txnFilter, setTxnFilter] = useState({});
-  const [txnSort, setTxnSort] = useState({});
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [refresh, setRefresh] = useState(false);
 
   // ADD TRANSACTION DIALOG FUNCTIONS
   const handleAddOpen = () => {
@@ -132,69 +145,31 @@ function TransactionDashboard() {
       });
   };
 
-  // TRANSACTION TABLE FUNCTIONS
-  const getFilteredTxns = (
-    user,
-    page,
-    pageSize,
-    txnGrpDate,
-    txnFilters = {},
-    txnSort = {}
-  ) => {
-    if (user && user.token && pageSize) {
-      setLoading(true);
-      getTransactions(user.token, {
-        limit: pageSize,
-        page,
-        start: startOfMonth(txnGrpDate),
-        end: endOfMonth(txnGrpDate),
-        ...txnFilters,
-        ...txnSort,
-      })
-        .then((res) => {
-          const {
-            transactions,
-            totalResults,
-            // page,
-            // limit,
-            // totalPages,
-            // hasNextPage,
-            // hasPrevPage,
-            // nextPage,
-            // prevPage,
-          } = res.data;
-          // console.log(res.data);
-          setRefresh(false);
-          setTransactions(transactions);
-          setTotalCount(totalResults);
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.log("error in trsanctions : ", err);
-          setLoading(false);
-        });
-    }
-  };
+  const handleFilterChange = useCallback(
+    (model, details) => {
+      console.log("Filtering : ", model);
+      const { columnField, operatorValue, value } = model.items[0];
+      if (value === undefined) return setTxnFilter({});
+      setTxnFilter({
+        [columnField]: value,
+        op: operatorValue,
+      });
+    },
+    [setTxnFilter]
+  );
 
-  const handleFilterChange = useCallback((model, details) => {
-    console.log("Filtering : ", model);
-    const { columnField, operatorValue, value } = model.items[0];
-    if (value === undefined) return setTxnFilter({});
-    setTxnFilter({
-      [columnField]: value,
-      op: operatorValue,
-    });
-  }, []);
-
-  const handleSortChange = useCallback((model, details) => {
-    console.log("Sorting : ", model);
-    if (model?.length <= 0) return setTxnSort({});
-    const { field, sort } = model[0];
-    setTxnSort({
-      sort_by: field,
-      sort_order: sort,
-    });
-  }, []);
+  const handleSortChange = useCallback(
+    (model, details) => {
+      console.log("Sorting : ", model);
+      if (model?.length <= 0) return setTxnSort({});
+      const { field, sort } = model[0];
+      setTxnSort({
+        sort_by: field,
+        sort_order: sort,
+      });
+    },
+    [setTxnSort]
+  );
 
   // TRANSACTION CARD FUNCTIONS
   const getTxnTotals = (user, currentDateFilter) => {
@@ -221,9 +196,9 @@ function TransactionDashboard() {
   };
 
   // RECENT TRANSACTIONS FUNCTIONS
-  const getRecentTxns = (user) => {
+  const getRecentTxns = useCallback((user) => {
     if (user?.token) {
-      setLoading(true);
+      // setLoading(true);
       getTransactions(user.token, {
         limit: 5,
       })
@@ -235,7 +210,7 @@ function TransactionDashboard() {
           console.log("error in getting recent transactions : ", err);
         });
     }
-  };
+  }, []);
 
   // LAST 6 MONTH CHART FUNCTION
   const getTotalForSixMonths = (user, date) => {
@@ -271,18 +246,6 @@ function TransactionDashboard() {
     }
   };
 
-  // TRANSACTION TABLE EFFECTS
-  useEffect(() => {
-    getFilteredTxns(
-      user,
-      page,
-      pageSize,
-      currentDateFilter,
-      txnFilter,
-      txnSort
-    );
-  }, [user, page, pageSize, currentDateFilter, txnFilter, txnSort]);
-
   // TRANSACTION ADD EFFECTS
   useEffect(() => {
     if (isError && message) {
@@ -296,7 +259,7 @@ function TransactionDashboard() {
       setRefresh(true);
       dispatch(reset());
     }
-  }, [isSuccess, isError, message, dispatch]);
+  }, [isSuccess, isError, message, setRefresh, dispatch]);
 
   // DASHBOARD, TRANSACTION CARD, LAST 6 MONTH CHART EFFECTS
   useEffect(() => {
@@ -308,18 +271,18 @@ function TransactionDashboard() {
   // COMMON EFFECTS
   useEffect(() => {
     if (refresh) {
-      getFilteredTxns(user, page, pageSize, currentDateFilter);
+      // getFilteredTxns(user, page, pageSize, currentDateFilter);
       getTotalByCategory(user, currentDateFilter);
       getTotalForSixMonths(user, currentDateFilter);
       getTxnTotals(user, currentDateFilter);
       getRecentTxns(user);
     }
-  }, [refresh, user, currentDateFilter, page, pageSize]);
+  }, [refresh, user, currentDateFilter, page, pageSize, getRecentTxns]);
 
   // RECENT TRANSACTIONS EFFECT
   useEffect(() => {
     getRecentTxns(user);
-  }, [user]);
+  }, [user, getRecentTxns]);
 
   return (
     <Container maxWidth="lg" sx={{ my: 1 }}>
@@ -428,7 +391,6 @@ function TransactionDashboard() {
         loading={loading}
         handleClose={() => {
           setOpenEdit(false);
-          // setTxnEdit({});
         }}
       />
     </Container>

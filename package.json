@@ -16,6 +16,7 @@
     "axios": "^0.26.1",
     "chart.js": "^3.7.1",
     "date-fns": "^2.28.0",
+    "export-from-json": "^1.6.0",
     "firebase": "^9.6.10",
     "formik": "^2.2.9",
     "random-hex-color-generator": "^1.0.12",
