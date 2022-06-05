@@ -1,34 +1,45 @@
-import { useEffect } from "react";
+import { useEffect, useContext } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { Box } from "@mui/material";
-import { ToastContainer } from "react-toastify";
+import { useDispatch, useSelector } from "react-redux";
+import { Box, useTheme } from "@mui/material";
 import CssBaseline from "@mui/material/CssBaseline";
-import "react-toastify/dist/ReactToastify.css";
+import { ToastContainer } from "react-toastify";
 
-import {TransactionProvider} from './context/transactionContext'
+import { SideNavCtx } from "./context/sideNavContext";
 
-import CategoryDashboard from "./pages/CategoryDashboard";
+import { getMe } from "./features/auth/authSlice";
+import { getUserCategories } from "./features/categories/categoriesSlice";
+import { DRAWER_WIDTH } from "./constants";
+
+import Header from "./components/layouts/Header";
+import SideNav from "./components/layouts/SideNav";
+import Spinner from "./components/Spinner";
+
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Header from "./components/Header";
-import { useDispatch, useSelector } from "react-redux";
-import { getMe } from "./features/auth/authSlice";
-import Spinner from "./components/Spinner";
+import BudgetBoard from "./pages/BudgetBoard";
 import TransactionDashboard from "./pages/TransactionDashboard";
-import SideNav from "./components/SideNav";
-import { DRAWER_WIDTH } from "./constants";
+import CategoryDashboard from "./pages/CategoryDashboard";
+
+import "react-toastify/dist/ReactToastify.css";
 
 function App() {
   // const [openSideNav, setOpenSideNav] = useState(false);
+  const theme = useTheme();
   const dispatch = useDispatch();
   const { user, isLoading } = useSelector((state) => state.auth);
+
+  const { open } = useContext(SideNavCtx);
+
   useEffect(() => {
     dispatch(getMe());
   }, [dispatch]);
 
-  // const handleSideNav = () => {
-  //   setOpenSideNav(true);
-  // };
+  useEffect(() => {
+    if (user && user?.token) {
+      console.log("calling categories")
+      dispatch(getUserCategories())}
+  }, [user, dispatch])
 
   if (isLoading) return <Spinner />;
 
@@ -41,22 +52,25 @@ function App() {
         <Box
           component={"main"}
           sx={{
-            width: `calc(100% - ${DRAWER_WIDTH}px)`,
-            ml: `${DRAWER_WIDTH}px`,
+            width: open
+              ? `calc(100% - ${DRAWER_WIDTH}px)`
+              : `calc(99%-${theme.spacing(7)})`,
+            ml: open ? `${DRAWER_WIDTH}px` : `calc(${theme.spacing(8)} + 1px)`,
             mt: "70px",
           }}
         >
           <Routes>
-            <Route path="/" element={<div>Home</div>} />
-            <Route path="/transactions" element={
-              <TransactionProvider>
-
-                <TransactionDashboard />
-              </TransactionProvider>
-            } />
+            <Route path="/" element={<BudgetBoard />} />
+            <Route
+              path="/transactions"
+              element={
+                  <TransactionDashboard  />
+              }
+            />
             <Route path="/categories" element={<CategoryDashboard />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
+            <Route path="*" element={<BudgetBoard />} />
           </Routes>
         </Box>
       </Router>

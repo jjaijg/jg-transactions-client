@@ -1,5 +1,7 @@
-import { useState, useEffect, useCallback, useContext } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
+import exportFromJSON from "export-from-json";
 import {
   Box,
   Container,
@@ -14,88 +16,73 @@ import LocalizationProvider from "@mui/lab/LocalizationProvider";
 import Fab from "@mui/material/Fab";
 import AddIcon from "@mui/icons-material/Add";
 import { toast } from "react-toastify";
-import { startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { startOfMonth, endOfMonth, subMonths, format } from "date-fns";
 
-import TransactionCard from "../components/TransactionCard";
-import RecentTransactionCard from "../components/RecentTransactionCard";
-import AddTransaction from "../components/AddTransaction";
-import TransactionTable from "../components/TransactionTable";
 import { CategoryChart, MonthChart } from "../components/Charts";
-import EditTransaction from "./../components/EditTransaction";
+import TransactionCard from "../components/transactionComponents/TransactionCard";
+import RecentTransactionCard from "../components/transactionComponents/RecentTransactionCard";
+import AddTransaction from "../components/transactionComponents/AddTransaction";
+import EditTransaction from "./../components/transactionComponents/EditTransaction";
+import TransactionTable from "../components/transactionComponents/TransactionTable";
 
 import {
-  getTotalFromTransactions,
-  // getfilteredTransactions,
+  getFilteredTxns,
+  getRecentTransactions,
+  getTransactionTotals,
+  getLastSixMonthDetail,
+  getCategoryTotalDetail,
+  createTransaction,
   updateTransaction,
   deleteTransaction,
-} from "../features/transactions/transactionsService";
-import {
-  createTransaction,
-  reset,
+  setTxnBoardDate,
+  setTxnEdit,
+  setFilters,
+  setTxnSort,
+  setPagination,
+  resetMessage,
 } from "./../features/transactions/transactionsSlice";
-import {
-  TransactionCtx,
-  TransactionDispatchCtx,
-} from "../context/transactionContext";
+import { getFilteredBudgets } from "../features/budgets/budgetsSlice";
 import { getTransactions } from "../utils/transactionUtils";
 
-const getTotal = async (token, params = {}) => {
-  const res = await getTotalFromTransactions(token, params);
-  const { transactions } = await res.data;
-  return transactions;
-};
+import { FILE_NAME, EXPORT_TYPE } from "../constants";
 
 function TransactionDashboard() {
+  const navigate = useNavigate();
+
   // REDUX
   const dispatch = useDispatch();
-  // CONTEXT
-  const {
-    transactions,
-    user,
-    page,
-    pageSize,
-    currentDateFilter,
-    totalCount,
-    loading,
-    refresh,
-  } = useContext(TransactionCtx);
-  const {
-    setCurrentDateFilter,
-    setTxnFilter,
-    setTxnSort,
-    setPage,
-    setPageSize,
-    setLoading,
-    setRefresh,
-    // getFilteredTxns,
-  } = useContext(TransactionDispatchCtx);
+
   // GLOBAL STATES
-  // const { user } = useSelector((state) => state.auth);
-  const { isSuccess, isError, message, isLoading } = useSelector(
-    (state) => state.transactions
-  );
-
-  // TRANSACTION CARD STATES
-  const [txnDetail, setTxnDetail] = useState({
-    income: 0,
-    expense: 0,
-  });
-
-  // RECENT TRANSACTIONS CARD STATES
-  const [recents, setRecents] = useState([]);
-
-  // LAST 6 MONTH CHART STATES
-  const [sixMonthTxns, setSixMonthTxns] = useState([]);
-
-  // CATEGORY CHART STATES
-  const [totalByCat, setTotalByCat] = useState([]);
+  const { user } = useSelector((state) => state.auth);
+  const { budgets } = useSelector((state) => state.budgets);
+  const { categories } = useSelector((state) => state.categories);
+  const {
+    txnBoardDate,
+    transactions,
+    txnEdit,
+    recents,
+    txnTotal,
+    latSixMonthDetails,
+    categoryTotalDetail,
+    txnFilters,
+    txnSort,
+    txnPagination,
+    totalCount,
+    isSuccess,
+    isError,
+    message,
+    isLoading,
+    isRefetch
+  } = useSelector((state) => state.transactions);
 
   // ADD TRANSACTION DIALOG STATES
   const [openAdd, setOpenAdd] = useState(false);
 
   // EDIT TRANSACTION DIALOG STATES
-  const [txnEdit, setTxnEdit] = useState({});
   const [openEdit, setOpenEdit] = useState(false);
+
+  // DWONLOAD TXNS
+  const [isDowloading, setIsDownloading] = useState(false);
 
   // ADD TRANSACTION DIALOG FUNCTIONS
   const handleAddOpen = () => {
@@ -111,22 +98,16 @@ function TransactionDashboard() {
     setOpenEdit(true);
   };
 
-  const handleEditTransaction = async (transaction) => {
-    setLoading(true);
-    await updateTransaction(user?.token, transaction)
-      .then(() => {
-        setRefresh(true);
-      })
-      .catch(() => {
-        setRefresh(false);
-        setLoading(false);
-      });
+  const handleEditTransaction = async (updTxn) => {
+    dispatch(updateTransaction(updTxn));
   };
 
   // TRANSACTION TABLE FUNCTIONS
   const handleEdit = async (row) => {
     console.log("editing : ", row);
-    setTxnEdit(row);
+    dispatch(
+      setTxnEdit(row)
+    );
     handleEditOpen();
   };
   const handleDelete = async (id) => {
@@ -134,155 +115,214 @@ function TransactionDashboard() {
       "Are you sure?  Do you want to delete the selected transaction? "
     );
     if (!canDel) return;
-    setLoading(true);
-    await deleteTransaction(user?.token, id)
-      .then(() => {
-        setRefresh(true);
-      })
-      .catch(() => {
-        setRefresh(false);
-        setLoading(false);
-      });
+    dispatch(deleteTransaction(id))
   };
 
   const handleFilterChange = useCallback(
     (model, details) => {
       console.log("Filtering : ", model);
       const { columnField, operatorValue, value } = model.items[0];
-      if (value === undefined) return setTxnFilter({});
-      setTxnFilter({
-        [columnField]: value,
-        op: operatorValue,
-      });
+      if (value === undefined) return dispatch(setFilters({}));
+      dispatch(
+        setFilters({
+          [columnField]: value,
+          op: operatorValue,
+        })
+      );
     },
-    [setTxnFilter]
+    [dispatch]
   );
 
   const handleSortChange = useCallback(
     (model, details) => {
       console.log("Sorting : ", model);
-      if (model?.length <= 0) return setTxnSort({});
+      if (model?.length <= 0) return dispatch(setTxnSort({}));
       const { field, sort } = model[0];
-      setTxnSort({
-        sort_by: field,
-        sort_order: sort,
-      });
+      dispatch(
+        setTxnSort({
+          sort_by: field,
+          sort_order: sort,
+        })
+      );
     },
-    [setTxnSort]
+    [dispatch]
   );
 
-  // TRANSACTION CARD FUNCTIONS
-  const getTxnTotals = (user, currentDateFilter) => {
-    if (user && user.token && currentDateFilter) {
-      const start = startOfMonth(currentDateFilter);
-      const end = endOfMonth(currentDateFilter);
-      getTotal(user.token, {
-        // group: "month",
-        start,
-        end,
-        limit: 12000,
-      }).then((transactions) => {
-        console.log("transactions totla :", transactions);
-        if (transactions.length) {
-          setTxnDetail({
-            [transactions[0]._id]: transactions[0].totalAmount,
-            [transactions[1]._id]: transactions[1].totalAmount,
-          });
-        } else {
-          setTxnDetail({ expense: 0, income: 0 });
-        }
-      });
-    }
+  const handlePaginationChange = (pagination) => {
+    dispatch(setPagination(pagination));
   };
 
-  // RECENT TRANSACTIONS FUNCTIONS
-  const getRecentTxns = useCallback((user) => {
-    if (user?.token) {
-      // setLoading(true);
-      getTransactions(user.token, {
-        limit: 5,
-      })
-        .then((res) => {
-          const { transactions } = res.data;
-          setRecents(transactions);
+  // Download Transactions:
+    const downloadTxns = useCallback(() => {
+
+      if (user && user.token) {
+        console.log("Downlaoding transactions...")
+        setIsDownloading(true);
+        getTransactions(user.token, {
+          limit: 1200,
+          page: 1,
+          start: startOfMonth(new Date(txnBoardDate)),
+          end: endOfMonth(new Date(txnBoardDate)),
+          ...txnFilters,
+          ...txnSort,
         })
-        .catch((err) => {
-          console.log("error in getting recent transactions : ", err);
-        });
-    }
-  }, []);
-
-  // LAST 6 MONTH CHART FUNCTION
-  const getTotalForSixMonths = (user, date) => {
-    if (user?.token) {
-      const start = startOfMonth(subMonths(date, 6));
-      const end = new Date();
-      getTotal(user.token, {
-        group: "month",
-        limit: 12000,
-        start,
-        end,
-        sort_order: "asc",
-        sort_by: "_id",
-      }).then((txns) => {
-        setSixMonthTxns(txns);
-      });
-    }
-  };
-
-  // CATEGORY CHART FUNCTION
-  const getTotalByCategory = (user, date) => {
-    if (user?.token) {
-      const start = startOfMonth(date);
-      const end = endOfMonth(date);
-      getTotal(user.token, {
-        group: "category",
-        limit: 12000,
-        start,
-        end,
-      }).then((txns) => {
-        setTotalByCat(txns);
-      });
-    }
-  };
+          .then((res) => {
+            let { transactions } = res.data;
+            transactions = transactions.map((txn) => ({
+              amount: txn.amount,
+              type: txn.type,
+              category_name: txn.category_name,
+              date: format(new Date(txn.date), "dd/MMM/yyyy"),
+              description: txn.description,
+            }));
+            exportFromJSON({
+              data: transactions,
+              fileName: FILE_NAME,
+              exportType: EXPORT_TYPE,
+              fields: {
+                amount: "Amount",
+                type: "Type",
+                category_name: "Category",
+                date: "Date",
+                description: "Description",
+              },
+            });
+            setIsDownloading(false);
+          })
+          .catch((err) => {
+            console.log("error in downloading transactions : ", err);
+            setIsDownloading(false);
+          });
+      }
+    }, [user, txnBoardDate, txnFilters, txnSort]);
 
   // TRANSACTION ADD EFFECTS
+  useEffect(() => {
+    if (user?.token) {
+      dispatch(getFilteredBudgets({ limit: 1000 }));
+      // dispatch(getUserCategories());
+    }
+  }, [user?.token, dispatch]);
+
   useEffect(() => {
     if (isError && message) {
       console.log(message);
       toast.error(Array.isArray(message) ? message.join("\n") : message);
-      dispatch(reset());
+      dispatch(resetMessage());
     }
 
     if (isSuccess && message) {
       toast.success(message);
-      setRefresh(true);
-      dispatch(reset());
+      dispatch(resetMessage());
     }
-  }, [isSuccess, isError, message, setRefresh, dispatch]);
+  }, [isSuccess, isError, message, dispatch]);
 
   // DASHBOARD, TRANSACTION CARD, LAST 6 MONTH CHART EFFECTS
   useEffect(() => {
-    getTxnTotals(user, currentDateFilter);
-    getTotalByCategory(user, currentDateFilter);
-    getTotalForSixMonths(user, currentDateFilter);
-  }, [currentDateFilter, user]);
+    if (user && user.token) {
+      const start = startOfMonth(new Date(txnBoardDate) || new Date()).toISOString();
+      const end = endOfMonth(new Date(txnBoardDate) || new Date()).toISOString();
+
+      const six_start = startOfMonth(
+        subMonths(new Date(txnBoardDate) || new Date(), 6)
+      ).toISOString();
+      const six_end = new Date().toISOString();
+
+      dispatch(
+        getTransactionTotals({
+          // group: "month",
+          start,
+          end,
+          limit: 12000,
+        })
+      );
+
+      dispatch(
+        getCategoryTotalDetail({
+          group: "category",
+          limit: 12000,
+          start,
+          end,
+        })
+      );
+
+      dispatch(
+        getLastSixMonthDetail({
+          group: "month",
+          limit: 12000,
+          start: six_start,
+          end: six_end,
+          sort_order: "asc",
+          sort_by: "_id",
+        })
+      );
+    }
+  }, [txnBoardDate, user, dispatch]);
 
   // COMMON EFFECTS
   useEffect(() => {
-    if (refresh) {
-      // getFilteredTxns(user, page, pageSize, currentDateFilter);
-      getTotalByCategory(user, currentDateFilter);
-      getTotalForSixMonths(user, currentDateFilter);
-      getTxnTotals(user, currentDateFilter);
-      getRecentTxns(user);
+    if (isRefetch && user && user.token) {
+      const start = startOfMonth(
+        new Date(txnBoardDate) || new Date()
+      ).toISOString();
+      const end = endOfMonth(
+        new Date(txnBoardDate) || new Date()
+      ).toISOString();
+      const six_start = startOfMonth(
+        subMonths(new Date(txnBoardDate) || new Date(), 6)
+      ).toISOString();
+      const six_end = new Date().toISOString();
+
+      dispatch(
+        getTransactionTotals({
+          // group: "month",
+          start,
+          end,
+          limit: 12000,
+        })
+      );
+
+      dispatch(
+        getCategoryTotalDetail({
+          group: "category",
+          limit: 12000,
+          start,
+          end,
+        })
+      );
+
+      dispatch(
+        getLastSixMonthDetail({
+          group: "month",
+          limit: 12000,
+          start: six_start,
+          end: six_end,
+          sort_order: "asc",
+          sort_by: "_id",
+        })
+      );
+      dispatch(getRecentTransactions());
     }
-  }, [refresh, user, currentDateFilter, page, pageSize, getRecentTxns]);
+  }, [isRefetch, user, txnBoardDate, txnPagination, dispatch]);
 
   // RECENT TRANSACTIONS EFFECT
   useEffect(() => {
-    getRecentTxns(user);
-  }, [user, getRecentTxns]);
+    if (user?.token) dispatch(getRecentTransactions());
+  }, [user, dispatch]);
+
+  // TRANSACTION  EFFECTS
+  useEffect(() => {
+    if (user && user.token) dispatch(getFilteredTxns());
+  }, [user, txnPagination, txnBoardDate, txnFilters, txnSort, dispatch]);
+
+  useEffect(() => {
+    if (user && user?.token && isRefetch) dispatch(getFilteredTxns());
+  }, [user,isRefetch, dispatch]);
+
+  // CHECK LOGIN STATUS
+    useEffect(() => {
+      if (!user) navigate("/login");
+    }, [user, navigate]);
 
   return (
     <Container maxWidth="lg" sx={{ my: 1 }}>
@@ -297,12 +337,12 @@ function TransactionDashboard() {
           <Grid item>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
-                value={currentDateFilter}
+                value={new Date(txnBoardDate)}
                 minDate={new Date("2021-01-01")}
                 maxDate={new Date("2024-01-01")}
                 views={["month", "year"]}
                 onChange={(newValue) => {
-                  setCurrentDateFilter(newValue);
+                  dispatch(setTxnBoardDate(new Date(newValue).toISOString()));
                 }}
                 renderInput={(params) => (
                   <TextField variant="outlined" size="small" {...params} />
@@ -315,16 +355,15 @@ function TransactionDashboard() {
         <Grid container spacing={2}>
           <Grid item xs={12} md={4}>
             <TransactionCard
-              income={txnDetail.income}
-              expense={txnDetail.expense}
-              selectedDate={currentDateFilter}
+              txnTotal={txnTotal}
+              selectedDate={new Date(txnBoardDate)}
             />
           </Grid>
           <Grid item xs={12} md={4}>
             <RecentTransactionCard transactions={recents} />
           </Grid>
           <Grid item xs={12} md={4}>
-            <MonthChart transactions={sixMonthTxns} />
+            <MonthChart transactions={latSixMonthDetails} />
           </Grid>
         </Grid>
         {/* </Paper> */}
@@ -332,14 +371,14 @@ function TransactionDashboard() {
       <Grid container spacing={2}>
         <Grid item xs={12} lg={6}>
           <CategoryChart
-            transactions={totalByCat}
+            transactions={categoryTotalDetail}
             type="income"
             title="Income by category"
           />
         </Grid>
         <Grid item xs={12} lg={6}>
           <CategoryChart
-            transactions={totalByCat}
+            transactions={categoryTotalDetail}
             type="expense"
             title="Expense by category"
           />
@@ -354,13 +393,14 @@ function TransactionDashboard() {
         </h3>
         <TransactionTable
           transactions={transactions}
-          pagSize={pageSize}
+          pagSize={txnPagination.pageSize}
           rowCount={totalCount}
           rowsPerPageOptions={[5, 10, 20, 50, 100]}
-          setPage={setPage}
-          setPageSize={setPageSize}
-          loading={loading}
+          loading={isLoading}
+          isDowloading={isDowloading}
+          downloadTxns={downloadTxns}
           handleFilterChange={handleFilterChange}
+          handlePaginationChange={handlePaginationChange}
           handleSortChange={handleSortChange}
           handleEdit={handleEdit}
           handleDelete={handleDelete}
@@ -368,7 +408,10 @@ function TransactionDashboard() {
       </Paper>
       <Box sx={{ position: "fixed", bottom: 16, right: 16 }}>
         <AddTransaction
+          user={user}
           addTransaction={handleAddTransaction}
+          categories={categories}
+          budgets={budgets}
           open={openAdd}
           loading={isLoading}
           handleClose={() => {
@@ -385,12 +428,16 @@ function TransactionDashboard() {
         </Fab>
       </Box>
       <EditTransaction
+        user={user}
+        categories={categories}
         transaction={txnEdit}
+        budgets={budgets}
         editTransaction={handleEditTransaction}
         open={openEdit}
-        loading={loading}
+        loading={isLoading}
         handleClose={() => {
           setOpenEdit(false);
+          dispatch(setTxnEdit(null));
         }}
       />
     </Container>

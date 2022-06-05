@@ -1,23 +1,20 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
 
-import Container from "@mui/material/Container";
-import Box from "@mui/material/Box";
-import Paper from "@mui/material/Paper";
-import Typography from "@mui/material/Typography";
-import CategoryForm from "../components/CategoryForm";
-import Spinner from "../components/Spinner";
+import {Container, Box, Paper, Typography} from "@mui/material";
+
+import CategoryForm from "../components/categoryComponents/CategoryForm";
+import CategoryList from "../components/categoryComponents/CategoryList";
+import CategoryLoader from "../components/categoryComponents/CategoryLoader";
 
 import {
   getUserCategories,
   deleteCategory as delCatAction,
   updateCategory as updCatAction,
-  reset,
+  resetMessage,
 } from "../features/categories/categoriesSlice";
-import { toast } from "react-toastify";
-import CategoryList from "../components/CategoryList";
-import CategoryLoader from "../components/CategoryLoader";
 
 function CategoryDashboard() {
   const dispatch = useDispatch();
@@ -42,25 +39,30 @@ function CategoryDashboard() {
   };
 
   useEffect(() => {
-    if (user) dispatch(getUserCategories());
-  }, [user, dispatch]);
-
-  useEffect(() => {
-    if (isError && message) {
-      console.log(message);
-      toast.error(Array.isArray(message) ? message.join("\n") : message);
-    }
-
-    if (isSuccess && message) {
-      toast.success(message);
-    }
-
     if (!user) {
       navigate("/login");
     }
+  }, [user, navigate]);
 
-    return dispatch(reset());
-  }, [user, isError, isSuccess, message, dispatch, navigate]);
+  useEffect(() => {
+    if (user && user.token) dispatch(getUserCategories());
+  }, [user, dispatch]);
+
+  useEffect(() => {
+
+    if (isError && message) {
+      toast.error(Array.isArray(message) ? message.join("\n") : message);
+      console.log("clear cat error message")
+      dispatch(resetMessage());
+    }
+    
+    if (isSuccess && message) {
+      toast.success(message);
+      console.log("clear cat success message")
+      dispatch(resetMessage());
+    }
+
+  }, [user, isError, isSuccess, message, dispatch]);
 
   return (
     <Container maxWidth="lg" sx={{ my: 1 }}>

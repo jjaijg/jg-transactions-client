@@ -4,7 +4,7 @@ import Box from "@mui/material/Box";
 
 function Spinner() {
   return (
-    <Box sx={{ display: "flex" }}>
+    <Box sx={{ display: "flex", height: "90vh", alignItems:"center", justifyContent: "center" }}>
       <CircularProgress />
     </Box>
   );

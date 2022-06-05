@@ -10,7 +10,7 @@ import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
 
-import { register, reset } from "../features/auth/authSlice";
+import { register, resetMessage } from "../features/auth/authSlice";
 import Spinner from "../components/Spinner";
 
 function Register() {
@@ -51,7 +51,7 @@ function Register() {
       navigate("/");
     }
 
-    dispatch(reset());
+    dispatch(resetMessage());
   }, [user, isError, isSuccess, message, navigate, dispatch]);
 
   if (isLoading) return <Spinner />;

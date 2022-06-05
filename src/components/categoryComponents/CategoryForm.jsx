@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { Box, Button, Grid, TextField } from "@mui/material";
+import React, { useEffect, useState } from "react";
+import { Button, Grid, TextField } from "@mui/material";
+import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { createCategory, reset } from "../features/categories/categoriesSlice";
+import { createCategory, resetMessage } from "../../features/categories/categoriesSlice";
 
 export const CategoryForm = () => {
   const dispatch = useDispatch();
   const [name, setName] = useState("");
-  const { isSuccess, isError, isLoading, message } = useSelector(
+  // isError, isLoading, message
+  const { isSuccess } = useSelector(
     (state) => state.categories
   );
 
@@ -28,7 +29,7 @@ export const CategoryForm = () => {
     if (isSuccess && name) {
       setName("");
     }
-    dispatch(reset());
+    dispatch(resetMessage());
   }, [isSuccess, name, dispatch]);
 
   return (

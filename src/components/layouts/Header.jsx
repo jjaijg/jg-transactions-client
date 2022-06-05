@@ -3,12 +3,13 @@ import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-// import IconButton from "@mui/material/IconButton";
-// import MenuIcon from "@mui/icons-material/Menu";
 
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { logout, reset } from "../features/auth/authSlice";
+import { logout, reset } from "../../features/auth/authSlice";
+import { reset as resetCategory } from "../../features/categories/categoriesSlice";
+import { reset as resetBudget } from "../../features/budgets/budgetsSlice";
+import { reset as resetTransaction } from "../../features/transactions/transactionsSlice";
 
 function Header() {
   const navigate = useNavigate();
@@ -17,8 +18,12 @@ function Header() {
   const { user } = useSelector((state) => state.auth);
 
   const onLogout = () => {
+    console.log("HEADER :: Logging out...")
     disptach(logout());
     disptach(reset());
+    disptach(resetCategory());
+    disptach(resetBudget());
+    disptach(resetTransaction());
     navigate("/");
   };
 

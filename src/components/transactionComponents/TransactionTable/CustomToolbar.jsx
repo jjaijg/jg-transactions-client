@@ -1,4 +1,3 @@
-import { useContext } from "react";
 import {
   GridToolbarContainer,
   // GridToolbarExport,
@@ -9,15 +8,9 @@ import {
 
 import Button from "@mui/material/Button";
 import { DownloadForOffline } from "@mui/icons-material";
-import {
-  TransactionCtx,
-  TransactionDispatchCtx,
-} from "../../context/transactionContext";
 import { CircularProgress } from "@mui/material";
 
-function CustomToolbar() {
-  const { isDowloading } = useContext(TransactionCtx);
-  const { downloadTxns } = useContext(TransactionDispatchCtx);
+function CustomToolbar({isDowloading, downloadTxns}) {
 
   const exportToExcel = () => {
     downloadTxns();

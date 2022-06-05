@@ -14,7 +14,7 @@ export const createTransaction = async (token, transaction) => {
 };
 export const updateTransaction = async (token, transaction) => {
   const response = await axios.put(
-    `${TXN_URL}/${transaction.id}`,
+    `${TXN_URL}/${transaction.prevTxn._id}`,
     transaction,
     configHeader(token)
   );

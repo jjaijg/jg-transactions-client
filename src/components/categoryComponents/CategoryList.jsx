@@ -1,22 +1,13 @@
 // import { styled } from "@mui/material/styles";
-import Box from "@mui/material/Box";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import ListItemText from "@mui/material/ListItemText";
-import IconButton from "@mui/material/IconButton";
-import Grid from "@mui/material/Grid";
-import Typography from "@mui/material/Typography";
+import { useState } from "react";
+import { TextField } from "@mui/material";
+import { toast } from "react-toastify";
+import {Box, List, ListItem, ListItemText, IconButton, Grid, Typography} from "@mui/material";
+
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import CheckIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/CancelRounded";
-import { useState } from "react";
-import { TextField } from "@mui/material";
-import { toast } from "react-toastify";
-
-// const Demo = styled("div")(({ theme }) => ({
-//   backgroundColor: theme.palette.background.paper,
-// }));
 
 export const CategoryList = ({
   categories = [],

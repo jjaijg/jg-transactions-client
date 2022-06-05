@@ -42,14 +42,18 @@ function RecentTransactionCard({ transactions = [] }) {
                     size="small"
                     color={txn.type === "expense" ? "error" : "success"}
                     label={txn.category_name}
-                    sx={{ mx: 1 }}
+                    sx={{ mx: 1, fontSize: 10 }}
                   />
-                  <Chip size="small" label={formatDate(txn.date)} />
+                  <Chip
+                    size="small"
+                    label={formatDate(txn.date)}
+                    sx={{ fontSize: 10 }}
+                  />
                 </ListItemButton>
               </ListItem>
             ))
           ) : (
-            <Typography variant="h5" align="center">
+            <Typography variant="h6" align="center">
               No recent transactions
             </Typography>
           )}

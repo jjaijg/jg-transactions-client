@@ -1,4 +1,4 @@
-import { formatDate } from "../../utils/dateUtils";
+import { formatDate } from "../../../utils/dateUtils";
 import {
   GridActionsCellItem,
   getGridNumericOperators,
@@ -25,7 +25,7 @@ export const columns = [
   //   { field: 'id', headerName: 'ID', width: 90 },
   {
     field: "amount",
-    headerName: "Amount",
+    headerName: "Amount (₹)",
     description: "Amount",
     type: "number",
     width: 150,

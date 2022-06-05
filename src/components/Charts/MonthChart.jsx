@@ -9,8 +9,8 @@ import {
   Legend,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
-import { Paper, Grid } from "@mui/material";
-import { randomHexColorWithArray } from "random-hex-color-generator";
+import { Paper, Typography } from "@mui/material";
+// import { randomHexColorWithArray } from "random-hex-color-generator";
 import { fullMonths } from "../../constants/months";
 
 ChartJS.register(
@@ -23,15 +23,16 @@ ChartJS.register(
 );
 
 export const options = {
+  aspectRation: 1,
   responsive: true,
   plugins: {
     legend: {
       position: "bottom",
     },
-    title: {
-      display: true,
-      text: "Last 6 month comparison",
-    },
+    // title: {
+    //   display: true,
+    //   text: "Last 6 month comparison",
+    // },
   },
 };
 
@@ -63,8 +64,16 @@ const getChartData = (txns = []) => {
 };
 function MonthChart({ transactions = [] }) {
   return (
-    <Paper elevation={3} sx={{ py: 2, pt: 5, my: 2, minHeight: 280 }}>
-      <Bar options={options} data={getChartData(transactions)} />
+    <Paper elevation={3} sx={{ py: 2, my: 2, minHeight: 280 }}>
+      <Typography variant="h6" textAlign={"center"}>
+        Last 6 month comparison
+      </Typography>
+      <Bar
+        width={"70%"}
+        height={"41vh"}
+        options={options}
+        data={getChartData(transactions)}
+      />
     </Paper>
   );
 }

@@ -11,19 +11,14 @@ function Table({
   pagSize,
   rowsPerPageOptions,
   rowCount,
-  setPage,
-  setPageSize,
   loading,
+  isDownloading,
+  downloadTxns,
   handleFilterChange,
+  handlePaginationChange,
   handleSortChange,
   handleEdit,
   handleDelete,
-  // groupBy,
-  // setGroupBy,
-  // txnGrpDate,
-  // setTxnGrpDate,
-  // filterOpen,
-  // setFilterOpen,
 }) {
   const [rowCountState, setRowCountState] = useState(rowCount);
   useEffect(() => {
@@ -34,17 +29,18 @@ function Table({
 
   const onPageChange = useCallback(
     (page) => {
-      setPage(page + 1);
+      // setPage(page + 1);
+      handlePaginationChange({ page: page + 1 });
     },
-    [setPage]
-  );
-
-  const onPageSizeChange = useCallback(
-    (newSize) => {
-      setPageSize(newSize);
-    },
-    [setPageSize]
-  );
+    [handlePaginationChange]
+    );
+    
+    const onPageSizeChange = useCallback(
+      (newSize) => {
+        handlePaginationChange({ pageSize: newSize });
+      },
+      [handlePaginationChange]
+    );
 
   const onFilterChange = useCallback(
     (model, details) => {
@@ -119,6 +115,7 @@ function Table({
         components={{
           Toolbar: CustomToolbar,
         }}
+        componentsProps={{ toolbar: { isDownloading, downloadTxns } }}
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
         onFilterModelChange={onFilterChange}

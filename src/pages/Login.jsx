@@ -11,7 +11,7 @@ import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
 import Spinner from "../components/Spinner";
 
-import { login, reset } from "../features/auth/authSlice";
+import { login, resetMessage } from "../features/auth/authSlice";
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -47,7 +47,7 @@ function Login() {
       navigate("/");
     }
 
-    dispatch(reset());
+    dispatch(resetMessage());
   }, [user, isError, isSuccess, message, navigate, dispatch]);
 
   if (isLoading) return <Spinner />;

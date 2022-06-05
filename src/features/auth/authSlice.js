@@ -59,6 +59,10 @@ export const authSlice = createSlice({
   initialState,
   reducers: {
     reset: (state) => {
+      console.log("clearing auth state...")
+      return initialState
+    },
+    resetMessage: (state) => {
       state.isLoading = false;
       state.isError = false;
       state.isSuccess = false;
@@ -114,5 +118,5 @@ export const authSlice = createSlice({
   },
 });
 
-export const { reset, getCurrentUser } = authSlice.actions;
+export const { reset, resetMessage, getCurrentUser } = authSlice.actions;
 export default authSlice.reducer;

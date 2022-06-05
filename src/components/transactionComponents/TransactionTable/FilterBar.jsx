@@ -1,4 +1,4 @@
-import { useState } from "react";
+// import { useState } from "react";
 import Box from "@mui/material/Box";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
@@ -23,9 +23,7 @@ function FilterBar({
   filterOpen,
   setFilterOpen,
 }) {
-  //   const [groupBy, setGroupBy] = useState("month");
-  //   const [monthInput, setMonthInput] = useState(new Date());
-
+  
   const handleChange = (e, isExpanded) => {
     console.log("filter expand : ", isExpanded);
     setFilterOpen(isExpanded);
